@@ -1,0 +1,82 @@
+# /*!***************************************************************************
+# \file       android.yml
+# \author     m.quah
+# \par        m.quah@digipen.edu
+# \date       13/07/2026
+# \brief
+#     Builds and uploads the Fan3D Android debug application package.
+# ***************************************************************************/
+
+name: Android
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  build:
+    name: "Android - ${{ matrix.name }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { project: ., name: Assignment-2-3DFan }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK, NDK and CMake
+        run: |
+          sdkmanager \
+            "platforms;android-36" \
+            "build-tools;36.0.0" \
+            "ndk;27.0.12077973" \
+            "cmake;3.22.1" \
+            --sdk_root="${ANDROID_HOME}"
+
+      # The wrapper scripts are not committed, so read the pinned distribution
+      # version and install that exact Gradle version on the runner.
+      - name: Read pinned Gradle version
+        id: gradle_ver
+        working-directory: ${{ matrix.project }}/android
+        run: |
+          VER=$(grep distributionUrl gradle/wrapper/gradle-wrapper.properties \
+            | sed -E 's/.*gradle-([0-9.]+)-.*/\1/')
+          if [ -z "$VER" ]; then
+            echo "Could not parse Gradle version from gradle-wrapper.properties" >&2
+            exit 1
+          fi
+          echo "Pinned Gradle version: $VER"
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Gradle from pinned version
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: ${{ steps.gradle_ver.outputs.version }}
+          build-root-directory: ${{ matrix.project }}/android
+          cache-read-only: false
+
+      - name: Write local.properties
+        working-directory: ${{ matrix.project }}/android
+        run: echo "sdk.dir=${ANDROID_HOME}" > local.properties
+
+      - name: Assemble debug APK
+        working-directory: ${{ matrix.project }}/android
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-${{ matrix.name }}
+          path: ${{ matrix.project }}/android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error

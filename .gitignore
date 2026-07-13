@@ -1,0 +1,36 @@
+# Desktop and Web build output
+/build_desktop/
+/web/
+/external/
+/tmp/
+
+# Android and Gradle output
+/build/
+/.gradle/
+/.idea/
+/out/
+/android/.gradle/
+/android/.idea/
+/android/local.properties
+/android/build/
+/android/captures/
+/android/.externalNativeBuild/
+/android/.cxx/
+/android/out/
+/android/app/build/
+/android/app/.cxx/
+/android/app/.externalNativeBuild/
+/android/app/out/
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+*.iml
+
+# Local assignment reference materials
+/Android Quiz 2*.pdf
+/Fan3D.exe
+/decompile.txt
+/Transform.h
+/Transform.cpp

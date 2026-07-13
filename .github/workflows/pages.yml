@@ -1,0 +1,65 @@
+# /*!***************************************************************************
+# \file       pages.yml
+# \author     m.quah
+# \par        m.quah@digipen.edu
+# \date       13/07/2026
+# \brief
+#     Builds Fan3D for WebGL and publishes it through GitHub Pages.
+# ***************************************************************************/
+
+name: GitHub Pages
+
+on:
+  push:
+    branches: [main]
+permissions:
+  pages: write
+  id-token: write
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-web:
+    name: Build WebGL fan
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Emscripten 3.1.64
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: "3.1.64"
+          actions-cache-folder: .emsdk-cache
+
+      - name: Create site directory
+        run: mkdir -p site
+
+      - name: Build WebGL version
+        run: |
+          bash build_web.sh
+          cp -r web/. site/
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site/
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build-web
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
